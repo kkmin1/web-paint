@@ -124,6 +124,9 @@ const init = () => {
                     }
 
                     appState.saveState(canvas);
+
+                    // Reset zoom to 100% to ensure the image is fully visible and workable
+                    updateZoom(1.0);
                 };
 
                 img.onerror = () => {
@@ -345,10 +348,32 @@ const init = () => {
     let startX = 0;
     let startY = 0;
 
-    const startDrawing = (e) => {
+    const getCoordinates = (e) => {
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    };
+
+    const startDrawing = (e) => {
+        if (e.type === 'touchstart') {
+            e.preventDefault();
+        }
+        
+        const { x, y } = getCoordinates(e);
 
         if (appState.tool === 'select') {
             if (appState.selectionActive && appState.selectionRect) {
@@ -446,9 +471,11 @@ const init = () => {
     const draw = (e) => {
         if (!isDrawing && !appState.isMovingSelection) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+        }
+
+        const { x, y } = getCoordinates(e);
 
         if (appState.isMovingSelection && appState.selectionRect && appState.selectionImageData) {
             const dx = x - startX;
@@ -500,10 +527,8 @@ const init = () => {
             appState.saveState(canvas);
             return;
         }
-
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        
+        const { x, y } = getCoordinates(e);
 
         if (appState.tool === 'select') {
             const w = x - startX;
@@ -539,6 +564,12 @@ const init = () => {
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseleave', stopDrawing);
+
+    // Touch Event Listeners
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
 
     // Initialize
     appState.saveState(canvas);
