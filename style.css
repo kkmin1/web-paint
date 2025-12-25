@@ -232,6 +232,20 @@ input[type="number"] {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
+/* Crop Button */
+#cropBtn {
+  background: linear-gradient(to bottom, #FFD54F, #FFC107);
+  color: #000;
+  border-color: #F9A825;
+  font-weight: 700;
+}
+
+#cropBtn:hover {
+  background: linear-gradient(to bottom, #FFEB3B, #FFD54F);
+  box-shadow: 0 3px 6px rgba(255, 193, 7, 0.4);
+  transform: translateY(-1px);
+}
+
 /* Workspace */
 .workspace {
   flex: 1;
