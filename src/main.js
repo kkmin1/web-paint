@@ -18,6 +18,7 @@ const init = () => {
     const saveJpgBtn = document.getElementById('saveJpgBtn');
     const fileInput = document.getElementById('fileInput');
     const importBtn = document.getElementById('importBtn');
+    const cropBtn = document.getElementById('cropBtn');
     const canvasSizeDisplay = document.getElementById('canvasSize');
     const cursorPosDisplay = document.getElementById('cursorPos');
 
@@ -80,19 +81,29 @@ const init = () => {
 
     if (savePngBtn) {
         savePngBtn.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = 'painting.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+            const filename = prompt('파일 이름을 입력하세요:', 'painting');
+            if (filename) {
+                const link = document.createElement('a');
+                // Add .png extension if not present
+                const finalFilename = filename.endsWith('.png') ? filename : filename + '.png';
+                link.download = finalFilename;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
         });
     }
 
     if (saveJpgBtn) {
         saveJpgBtn.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = 'painting.jpg';
-            link.href = canvas.toDataURL('image/jpeg', 0.95);
-            link.click();
+            const filename = prompt('파일 이름을 입력하세요:', 'painting');
+            if (filename) {
+                const link = document.createElement('a');
+                // Add .jpg extension if not present
+                const finalFilename = filename.endsWith('.jpg') || filename.endsWith('.jpeg') ? filename : filename + '.jpg';
+                link.download = finalFilename;
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+            }
         });
     }
 
@@ -165,6 +176,78 @@ const init = () => {
         });
     }
 
+    // Helper to update crop button visibility
+    const updateCropButtonVisibility = () => {
+        if (cropBtn) {
+            if (appState.selectionActive && appState.selectionRect) {
+                cropBtn.style.display = 'inline-block';
+            } else {
+                cropBtn.style.display = 'none';
+            }
+        }
+    };
+
+    // Crop to selection
+    const cropToSelection = () => {
+        if (!appState.selectionActive || !appState.selectionRect) {
+            console.warn('No active selection to crop');
+            return;
+        }
+
+        const { x, y, w, h } = appState.selectionRect;
+
+        // Enforce minimum crop size
+        if (w < 10 || h < 10) {
+            alert('선택 영역이 너무 작습니다. 최소 10x10 픽셀이 필요합니다.');
+            return;
+        }
+
+        // Clamp to canvas bounds
+        const cropX = Math.max(0, Math.min(x, canvas.width));
+        const cropY = Math.max(0, Math.min(y, canvas.height));
+        const cropW = Math.min(w, canvas.width - cropX);
+        const cropH = Math.min(h, canvas.height - cropY);
+
+        // Get the image data from the selection
+        const croppedImageData = ctx.getImageData(cropX, cropY, cropW, cropH);
+
+        // Resize canvas
+        canvas.width = cropW;
+        canvas.height = cropH;
+
+        // Fill with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, cropW, cropH);
+
+        // Draw the cropped content
+        ctx.putImageData(croppedImageData, 0, 0);
+
+        // Update canvas size display
+        if (canvasSizeDisplay) {
+            canvasSizeDisplay.textContent = `${cropW} x ${cropH}px`;
+        }
+
+        // Clear selection state
+        appState.setSelection(false);
+        appState.isFloating = false;
+        appState.selectionImageData = null;
+        appState.selectionRect = null;
+        appState.snapshot = null;
+
+        // Update crop button visibility
+        updateCropButtonVisibility();
+
+        // Save state for undo
+        appState.saveState(canvas);
+    };
+
+    // Crop button click handler
+    if (cropBtn) {
+        cropBtn.addEventListener('click', () => {
+            cropToSelection();
+        });
+    }
+
     // Helper to commit selection
     const commitSelection = () => {
         console.log('commitSelection called. Active:', appState.selectionActive);
@@ -185,6 +268,9 @@ const init = () => {
             appState.selectionImageData = null;
             appState.selectionRect = null;
             appState.snapshot = null;
+
+            // Update crop button visibility
+            updateCropButtonVisibility();
         }
     };
 
@@ -362,17 +448,18 @@ const init = () => {
         }
 
         const rect = canvas.getBoundingClientRect();
-        return {
-            x: clientX - rect.left,
-            y: clientY - rect.top
-        };
+        // Account for zoom level - convert viewport coordinates to canvas coordinates
+        const x = (clientX - rect.left) / appState.zoomLevel;
+        const y = (clientY - rect.top) / appState.zoomLevel;
+
+        return { x, y };
     };
 
     const startDrawing = (e) => {
         if (e.type === 'touchstart') {
             e.preventDefault();
         }
-        
+
         const { x, y } = getCoordinates(e);
 
         if (appState.tool === 'select') {
@@ -527,7 +614,7 @@ const init = () => {
             appState.saveState(canvas);
             return;
         }
-        
+
         const { x, y } = getCoordinates(e);
 
         if (appState.tool === 'select') {
@@ -550,6 +637,9 @@ const init = () => {
                 ctx.putImageData(appState.snapshot, 0, 0);
                 ctx.putImageData(imageData, rx, ry);
                 tools.select.drawPreview(ctx, rx, ry, rx + rw, ry + rh);
+
+                // Show crop button
+                updateCropButtonVisibility();
             }
         } else if (['pencil', 'brush', 'eraser'].includes(appState.tool)) {
             appState.saveState(canvas);

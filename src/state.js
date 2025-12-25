@@ -98,7 +98,12 @@ export class State {
       this.history = this.history.slice(0, this.historyStep + 1);
     }
 
-    this.history.push(canvas.toDataURL());
+    // Save both image data and canvas dimensions
+    this.history.push({
+      dataUrl: canvas.toDataURL(),
+      width: canvas.width,
+      height: canvas.height
+    });
     this.historyStep++;
 
     // Limit history size
@@ -125,11 +130,23 @@ export class State {
   }
 
   restoreState(ctx, canvas) {
+    const state = this.history[this.historyStep];
     const img = new Image();
-    img.src = this.history[this.historyStep];
+    img.src = state.dataUrl;
     img.onload = () => {
+      // Restore canvas dimensions
+      canvas.width = state.width;
+      canvas.height = state.height;
+
+      // Clear and redraw
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
+
+      // Update canvas size display
+      const canvasSizeDisplay = document.getElementById('canvasSize');
+      if (canvasSizeDisplay) {
+        canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
+      }
     };
     this.notify('history', this.historyStep);
   }
