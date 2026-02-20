@@ -22,7 +22,8 @@
         <button class="tool-btn" data-tool="eraser" title="지우개">지우개</button>
         <button class="tool-btn" data-tool="line" title="직선">직선</button>
         <button class="tool-btn" data-tool="rect" title="사각형">사각형</button>
-        <button class="tool-btn" data-tool="circle" title="원">원</button>
+        <button class="tool-btn color-select-btn" id="colorSelectBtn" title="색 선택">색 선택</button>
+        <button class="tool-btn" data-tool="triangle" title="삼각형">삼각형</button>
         <button class="tool-btn" data-tool="ellipse" title="타원">타원</button>
         <button class="tool-btn" data-tool="text" title="텍스트">텍스트</button>
         <button class="tool-btn" data-tool="select" title="선택">선택</button>
@@ -31,20 +32,43 @@
 
       <!-- Row 2: Settings & Controls -->
       <div class="toolbar-row settings-row">
-        <button class="tool-btn" id="eyedropperBtn" title="스포이드">스포이드</button>
-        <div class="color-picker-wrapper">
-          <input type="color" id="colorPicker" value="#000000" title="Color">
-        </div>
-        <input type="number" id="sizeInput" min="1" max="50" value="5" title="선 굵기">
-        <select id="fontFamily" title="Font Family">
-          <option value="Inter, sans-serif">Inter</option>
-          <option value="Arial, sans-serif">Arial</option>
-          <option value="'Times New Roman', serif">Times New Roman</option>
-          <option value="'Courier New', monospace">Courier New</option>
-          <option value="Georgia, serif">Georgia</option>
-          <option value="'Brush Script MT', cursive">Brush Script</option>
+        <input type="color" id="colorPicker" value="#000000" title="Color" style="display: none;">
+        <select id="sizeInput" class="named-select" title="선 굵기">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
         </select>
-        <input type="number" id="fontSize" min="8" max="200" value="16" title="Font Size">
+        <select id="fontFamily" class="named-select" title="폰트">
+          <option value="Arial, sans-serif" selected>Arial</option>
+          <option value="Inter, sans-serif">Inter</option>
+          <option value="'Times New Roman', serif">Times</option>
+          <option value="'Courier New', monospace">Courier</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Brush Script MT', cursive">Brush</option>
+        </select>
+        <select id="fontSize" class="named-select" title="폰트 크기">
+          <option value="8">8</option>
+          <option value="10">10</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="16" selected>16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="22">22</option>
+          <option value="24">24</option>
+          <option value="26">26</option>
+          <option value="30">30</option>
+          <option value="40">40</option>
+        </select>
         <button class="zoom-btn" id="zoomOutBtn" title="축소 (Ctrl+-)">🔍-</button>
         <button class="zoom-btn" id="zoomInBtn" title="확대 (Ctrl++)">🔍+</button>
       </div>
@@ -52,7 +76,8 @@
       <!-- Row 3: Action Buttons -->
       <div class="toolbar-row actions-row">
         <button class="action-btn load-btn" id="importBtn" title="불러오기">불러오기</button>
-        <button class="action-btn undo-btn" id="undoBtn" title="실행 취소">실행 취소</button>
+        <button class="action-btn undo-btn" id="undoBtn" title="뒤로가기">뒤로가기</button>
+        <button class="action-btn undo-btn" id="redoBtn" title="앞으로 가기">앞으로 가기</button>
         <button class="action-btn save-png-btn" id="savePngBtn" title="PNG 저장">PNG 저장</button>
         <button class="action-btn save-jpg-btn" id="saveJpgBtn" title="JPG 저장">JPG 저장</button>
         <button class="action-btn clear-btn" id="clearBtn" title="지우기">지우기</button>
@@ -75,7 +100,7 @@
       <div class="status-item" id="zoomLevel">100%</div>
     </footer>
   </div>
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 
 </html>
