@@ -276,21 +276,14 @@ const init = () => {
 
     const saveImageFile = async (format) => {
         const defaultName = 'painting';
-        const filename = prompt('파일 이름을 입력하세요:', defaultName);
-        if (!filename) return;
-
-        const normalizedName = filename.trim() || defaultName;
         const extension = format === 'png' ? '.png' : '.jpg';
         const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-        const lowerName = normalizedName.toLowerCase();
-        const hasValidExtension = format === 'png'
-            ? lowerName.endsWith('.png')
-            : lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg');
-        const finalFilename = hasValidExtension ? normalizedName : normalizedName + extension;
+        const finalFilename = `${defaultName}${extension}`;
         const exportCanvas = createExportCanvas(format);
+        const canUseSavePicker = typeof window.showSaveFilePicker === 'function' && window.isSecureContext;
 
         try {
-            const blob = await new Promise((resolve, reject) => {
+            const createBlob = () => new Promise((resolve, reject) => {
                 exportCanvas.toBlob(
                     (result) => {
                         if (!result) {
@@ -304,7 +297,7 @@ const init = () => {
                 );
             });
 
-            if (window.showSaveFilePicker) {
+            if (canUseSavePicker) {
                 const fileHandle = await window.showSaveFilePicker({
                     suggestedName: finalFilename,
                     types: [{
@@ -312,15 +305,30 @@ const init = () => {
                         accept: { [mimeType]: [extension] }
                     }]
                 });
+                const blob = await createBlob();
                 const writable = await fileHandle.createWritable();
                 await writable.write(blob);
                 await writable.close();
                 return;
             }
 
-            triggerBrowserDownload(blob, finalFilename);
+            const filename = prompt('파일 이름을 입력하세요:', defaultName);
+            if (!filename) return;
+            const normalizedName = filename.trim() || defaultName;
+            const lowerName = normalizedName.toLowerCase();
+            const hasValidExtension = format === 'png'
+                ? lowerName.endsWith('.png')
+                : lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg');
+            const fallbackFilename = hasValidExtension ? normalizedName : normalizedName + extension;
+            const blob = await createBlob();
+            alert('이 브라우저/환경은 폴더 선택 저장을 지원하지 않습니다. Chrome/Edge 최신 버전 + https 또는 localhost에서 가능합니다.');
+            triggerBrowserDownload(blob, fallbackFilename);
         } catch (error) {
             if (error && error.name === 'AbortError') return;
+            if (error && (error.name === 'SecurityError' || error.name === 'NotAllowedError')) {
+                alert('저장 위치 선택 권한이 차단되었습니다. 브라우저 권한을 허용하거나 https/localhost에서 다시 시도해주세요.');
+                return;
+            }
             console.error(`Failed to save ${format.toUpperCase()}:`, error);
             alert('저장에 실패했습니다. 브라우저 권한 또는 파일 접근 권한을 확인해주세요.');
         }
