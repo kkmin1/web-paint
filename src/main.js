@@ -105,39 +105,92 @@ const init = () => {
         });
     }
 
-    if (savePngBtn) {
-        savePngBtn.addEventListener('click', () => {
-            console.log('Save PNG button clicked');
-            const filename = prompt('파일 이름을 입력하세요:', 'painting');
-            if (filename) {
-                const link = document.createElement('a');
-                const finalFilename = filename.endsWith('.png') ? filename : filename + '.png';
-                link.download = finalFilename;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+    const createExportCanvas = (format) => {
+        if (format === 'jpg') {
+            const offscreenCanvas = document.createElement('canvas');
+            offscreenCanvas.width = canvas.width;
+            offscreenCanvas.height = canvas.height;
+            const offCtx = offscreenCanvas.getContext('2d');
+            offCtx.fillStyle = '#ffffff';
+            offCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            offCtx.drawImage(canvas, 0, 0);
+            return offscreenCanvas;
+        }
+        return canvas;
+    };
+
+    const triggerBrowserDownload = (blob, filename) => {
+        const link = document.createElement('a');
+        const blobUrl = URL.createObjectURL(blob);
+        link.download = filename;
+        link.href = blobUrl;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    };
+
+    const saveImageFile = async (format) => {
+        const defaultName = 'painting';
+        const filename = prompt('파일 이름을 입력하세요:', defaultName);
+        if (!filename) return;
+
+        const normalizedName = filename.trim() || defaultName;
+        const extension = format === 'png' ? '.png' : '.jpg';
+        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+        const lowerName = normalizedName.toLowerCase();
+        const hasValidExtension = format === 'png'
+            ? lowerName.endsWith('.png')
+            : lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg');
+        const finalFilename = hasValidExtension ? normalizedName : normalizedName + extension;
+        const exportCanvas = createExportCanvas(format);
+
+        try {
+            const blob = await new Promise((resolve, reject) => {
+                exportCanvas.toBlob(
+                    (result) => {
+                        if (!result) {
+                            reject(new Error('toBlob failed'));
+                            return;
+                        }
+                        resolve(result);
+                    },
+                    mimeType,
+                    format === 'png' ? undefined : 0.95
+                );
+            });
+
+            if (window.showSaveFilePicker) {
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: finalFilename,
+                    types: [{
+                        description: format === 'png' ? 'PNG Image' : 'JPEG Image',
+                        accept: { [mimeType]: [extension] }
+                    }]
+                });
+                const writable = await fileHandle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                return;
             }
+
+            triggerBrowserDownload(blob, finalFilename);
+        } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            console.error(`Failed to save ${format.toUpperCase()}:`, error);
+            alert('저장에 실패했습니다. 브라우저 권한 또는 파일 접근 권한을 확인해주세요.');
+        }
+    };
+
+    if (savePngBtn) {
+        savePngBtn.addEventListener('click', async () => {
+            console.log('Save PNG button clicked');
+            await saveImageFile('png');
         });
     }
 
     if (saveJpgBtn) {
-        saveJpgBtn.addEventListener('click', () => {
+        saveJpgBtn.addEventListener('click', async () => {
             console.log('Save JPG button clicked');
-            const filename = prompt('파일 이름을 입력하세요:', 'painting');
-            if (filename) {
-                const link = document.createElement('a');
-                const finalFilename = filename.endsWith('.jpg') || filename.endsWith('.jpeg') ? filename : filename + '.jpg';
-                link.download = finalFilename;
-                // JPG는 투명도를 지원 안 하므로 흰 배경을 합성한 후 저장
-                const offscreenCanvas = document.createElement('canvas');
-                offscreenCanvas.width = canvas.width;
-                offscreenCanvas.height = canvas.height;
-                const offCtx = offscreenCanvas.getContext('2d');
-                offCtx.fillStyle = '#ffffff';
-                offCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-                offCtx.drawImage(canvas, 0, 0);
-                link.href = offscreenCanvas.toDataURL('image/jpeg', 0.95);
-                link.click();
-            }
+            await saveImageFile('jpg');
         });
     }
 
