@@ -92,15 +92,49 @@ export class State {
     this.notify('zoom', this.zoomLevel);
   }
 
+  getAdaptiveHistoryLimit(pixelCount) {
+    if (pixelCount >= 20000000) return 6;
+    if (pixelCount >= 12000000) return 10;
+    if (pixelCount >= 8000000) return 16;
+    return 50;
+  }
+
+  createSnapshotDataUrl(canvas) {
+    const pixelCount = canvas.width * canvas.height;
+
+    // 큰 캔버스는 PNG 인코딩 비용이 커서 JPEG 스냅샷으로 저장
+    if (pixelCount >= 8000000) {
+      return canvas.toDataURL('image/jpeg', 0.9);
+    }
+    return canvas.toDataURL('image/png');
+  }
+
   saveState(canvas) {
+    const pixelCount = canvas.width * canvas.height;
+    this.maxHistory = this.getAdaptiveHistoryLimit(pixelCount);
+
     // Remove redo steps if any
     if (this.historyStep < this.history.length - 1) {
       this.history = this.history.slice(0, this.historyStep + 1);
     }
 
-    // Save both image data and canvas dimensions
+    let dataUrl = '';
+    try {
+      dataUrl = this.createSnapshotDataUrl(canvas);
+    } catch (error) {
+      // 1차 실패 시 더 낮은 품질 JPEG로 재시도
+      try {
+        dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      } catch (fallbackError) {
+        console.error('Failed to save canvas history snapshot:', fallbackError);
+        this.notify('history', this.historyStep);
+        return false;
+      }
+      console.warn('Fallback snapshot encoding used:', error);
+    }
+
     this.history.push({
-      dataUrl: canvas.toDataURL(),
+      dataUrl,
       width: canvas.width,
       height: canvas.height
     });
@@ -113,6 +147,7 @@ export class State {
     }
 
     this.notify('history', this.historyStep);
+    return true;
   }
 
   undo(ctx, canvas) {

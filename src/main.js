@@ -172,7 +172,10 @@ const init = () => {
                     canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
                 }
 
-                appState.saveState(canvas);
+                const saved = appState.saveState(canvas);
+                if (!saved) {
+                    alert('이미지는 불러왔지만 히스토리 저장에 실패했습니다. 큰 이미지에서는 Undo 단계가 제한될 수 있습니다.');
+                }
                 updateZoom(1.0);
             };
 
@@ -201,27 +204,34 @@ const init = () => {
         }
     };
 
-    const fitCanvasToViewport = () => {
-        if (!workspace) return;
-        const targetWidth = Math.max(320, workspace.clientWidth - 20);
-        const targetHeight = Math.max(240, workspace.clientHeight - 20);
+    const resizeCanvasPreserve = (targetWidth, targetHeight, sourceCanvas = null) => {
+        const nextWidth = Math.max(100, Math.round(targetWidth));
+        const nextHeight = Math.max(100, Math.round(targetHeight));
+        const buffer = sourceCanvas || (() => {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+            return tempCanvas;
+        })();
 
-        // 기존 이미지 데이터를 보존하면서 리사이즈
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(canvas, 0, 0);
-
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-
+        canvas.width = nextWidth;
+        canvas.height = nextHeight;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(buffer, 0, 0);
 
         if (canvasSizeDisplay) {
             canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
         }
+    };
+
+    const fitCanvasToViewport = () => {
+        if (!workspace) return;
+        const targetWidth = Math.max(320, workspace.clientWidth - 20);
+        const targetHeight = Math.max(240, workspace.clientHeight - 20);
+        resizeCanvasPreserve(targetWidth, targetHeight);
     };
 
     if (zoomInBtn) {
@@ -430,6 +440,7 @@ const init = () => {
     let resizeStartY = 0;
     let resizeStartW = 0;
     let resizeStartH = 0;
+    let resizeBufferCanvas = null;
 
     const resizeRight = document.getElementById('resizeRight');
     const resizeBottom = document.getElementById('resizeBottom');
@@ -442,6 +453,11 @@ const init = () => {
         resizeStartY = e.clientY;
         resizeStartW = canvas.width;
         resizeStartH = canvas.height;
+        resizeBufferCanvas = document.createElement('canvas');
+        resizeBufferCanvas.width = canvas.width;
+        resizeBufferCanvas.height = canvas.height;
+        const bufferCtx = resizeBufferCanvas.getContext('2d');
+        bufferCtx.drawImage(canvas, 0, 0);
         e.preventDefault();
     };
 
@@ -452,21 +468,17 @@ const init = () => {
     window.addEventListener('mousemove', (e) => {
         if (isResizing) {
             // 리사이즈: 드래그 델타를 이용해 캔버스 크기 조정
+            let nextWidth = resizeStartW;
+            let nextHeight = resizeStartH;
+
             if (resizeDir === 'right' || resizeDir === 'corner') {
-                const newWidth = Math.max(100, resizeStartW + (e.clientX - resizeStartX) / appState.zoomLevel);
-                canvas.width = Math.round(newWidth);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                nextWidth = Math.max(100, resizeStartW + (e.clientX - resizeStartX) / appState.zoomLevel);
             }
             if (resizeDir === 'bottom' || resizeDir === 'corner') {
-                const newHeight = Math.max(100, resizeStartH + (e.clientY - resizeStartY) / appState.zoomLevel);
-                canvas.height = Math.round(newHeight);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                nextHeight = Math.max(100, resizeStartH + (e.clientY - resizeStartY) / appState.zoomLevel);
             }
-            if (canvasSizeDisplay) {
-                canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
-            }
+
+            resizeCanvasPreserve(nextWidth, nextHeight, resizeBufferCanvas);
         }
 
         // 커서 위치 표시
@@ -481,7 +493,7 @@ const init = () => {
     window.addEventListener('mouseup', () => {
         if (isResizing) {
             isResizing = false;
-            // 리사이즈 후 상태 저장 (현재 흰 캔버스 상태)
+            resizeBufferCanvas = null;
             appState.saveState(canvas);
         }
     });
@@ -513,7 +525,9 @@ const init = () => {
     };
 
     const startDrawing = (e) => {
+        // 멀티 터치는 브라우저 스크롤/줌 제스처를 허용
         if (e.type === 'touchstart') {
+            if (e.touches && e.touches.length > 1) return;
             e.preventDefault();
         }
         // 리사이즈 중이면 그리기 무시
@@ -621,6 +635,11 @@ const init = () => {
         if (!isDrawing && !appState.isMovingSelection) return;
 
         if (e.type === 'touchmove') {
+            // 두 손가락 이상은 캔버스 그리기를 중단하고 브라우저 제스처에 위임
+            if (e.touches && e.touches.length > 1) {
+                isDrawing = false;
+                return;
+            }
             e.preventDefault();
         }
 
@@ -767,7 +786,12 @@ const init = () => {
     canvas.addEventListener('touchcancel', stopDrawing);
 
     // Initialize
-    fitCanvasToViewport();
+    const isMobileLike = window.matchMedia('(max-width: 820px), (pointer: coarse)').matches;
+    if (isMobileLike) {
+        fitCanvasToViewport();
+    } else if (canvasSizeDisplay) {
+        canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
+    }
     appState.saveState(canvas);
     console.log('Initialization complete.');
 };
