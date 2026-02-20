@@ -23,6 +23,17 @@ const init = () => {
     const canvasSizeDisplay = document.getElementById('canvasSize');
     const cursorPosDisplay = document.getElementById('cursorPos');
     const colorSelectBtn = document.getElementById('colorSelectBtn');
+    const colorModal = document.getElementById('colorModal');
+    const colorModalBackdrop = document.getElementById('colorModalBackdrop');
+    const colorModalClose = document.getElementById('colorModalClose');
+    const colorHexInput = document.getElementById('colorHexInput');
+    const colorPresets = document.getElementById('colorPresets');
+    const sizeBtn = document.getElementById('sizeBtn');
+    const sizeMenu = document.getElementById('sizeMenu');
+    const fontFamilyBtn = document.getElementById('fontFamilyBtn');
+    const fontFamilyMenu = document.getElementById('fontFamilyMenu');
+    const fontSizeBtn = document.getElementById('fontSizeBtn');
+    const fontSizeMenu = document.getElementById('fontSizeMenu');
     const workspace = document.querySelector('.workspace');
 
     // Tool Selection
@@ -44,21 +55,87 @@ const init = () => {
         }
     };
 
-    if (colorSelectBtn && colorPicker) {
-        colorSelectBtn.addEventListener('click', () => {
-            colorPicker.click();
+    const applyColor = (color) => {
+        appState.setColor(color);
+        syncColorButton(color);
+        if (colorPicker) colorPicker.value = color;
+        if (colorHexInput) colorHexInput.value = color.toUpperCase();
+    };
+
+    const normalizeHex = (value) => {
+        if (!value) return null;
+        const raw = value.trim().replace('#', '');
+        if (/^[0-9a-fA-F]{6}$/.test(raw)) {
+            return `#${raw.toUpperCase()}`;
+        }
+        return null;
+    };
+
+    const presetColors = [
+        '#000000', '#1F2937', '#4B5563', '#9CA3AF', '#FFFFFF', '#7F1D1D', '#DC2626', '#FB7185',
+        '#7C2D12', '#EA580C', '#FDBA74', '#854D0E', '#EAB308', '#FDE047', '#365314', '#65A30D',
+        '#BEF264', '#14532D', '#16A34A', '#86EFAC', '#064E3B', '#0D9488', '#5EEAD4', '#164E63',
+        '#0284C7', '#7DD3FC', '#1E3A8A', '#2563EB', '#93C5FD', '#312E81', '#4F46E5', '#A5B4FC',
+        '#581C87', '#9333EA', '#D8B4FE', '#831843', '#DB2777', '#F9A8D4', '#78350F', '#D97706',
+        '#FCD34D', '#374151', '#6B7280', '#D1D5DB', '#0F172A', '#334155', '#64748B', '#94A3B8'
+    ];
+
+    const openColorModal = () => {
+        if (!colorModal) return;
+        colorModal.classList.remove('hidden');
+        colorModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeColorModal = () => {
+        if (!colorModal) return;
+        colorModal.classList.add('hidden');
+        colorModal.setAttribute('aria-hidden', 'true');
+    };
+
+    if (colorPresets) {
+        presetColors.forEach((color) => {
+            const swatch = document.createElement('button');
+            swatch.type = 'button';
+            swatch.className = 'color-swatch';
+            swatch.style.background = color;
+            swatch.title = color;
+            swatch.setAttribute('aria-label', color);
+            swatch.addEventListener('click', () => applyColor(color));
+            colorPresets.appendChild(swatch);
         });
+    }
+
+    if (colorSelectBtn) {
+        colorSelectBtn.addEventListener('click', openColorModal);
     }
 
     if (colorPicker) {
         colorPicker.addEventListener('input', (e) => {
             const selectedColor = e.target.value;
-            appState.setColor(selectedColor);
-            syncColorButton(selectedColor);
+            applyColor(selectedColor);
         });
     }
 
-    syncColorButton(appState.color);
+    if (colorHexInput) {
+        colorHexInput.addEventListener('change', (e) => {
+            const normalized = normalizeHex(e.target.value);
+            if (normalized) {
+                applyColor(normalized);
+            } else {
+                e.target.value = appState.color.toUpperCase();
+            }
+        });
+    }
+
+    if (colorModalBackdrop) colorModalBackdrop.addEventListener('click', closeColorModal);
+    if (colorModalClose) colorModalClose.addEventListener('click', closeColorModal);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && colorModal && !colorModal.classList.contains('hidden')) {
+            closeColorModal();
+        }
+    });
+
+    applyColor(appState.color);
 
     // Size Input
     if (sizeInput) {
@@ -81,6 +158,75 @@ const init = () => {
             appState.fontSize = parseInt(e.target.value, 10) || 16;
         });
     }
+
+    const dropdownStates = [];
+
+    const closeAllDropdowns = () => {
+        dropdownStates.forEach(({ menu }) => {
+            menu.classList.add('hidden');
+        });
+    };
+
+    const setupSelectDropdown = (selectEl, triggerEl, menuEl, labelPrefix) => {
+        if (!selectEl || !triggerEl || !menuEl) return;
+
+        const updateLabel = () => {
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const selectedText = selectedOption ? selectedOption.textContent : '';
+            triggerEl.textContent = `${labelPrefix}: ${selectedText}`;
+        };
+
+        const renderMenu = () => {
+            menuEl.innerHTML = '';
+            Array.from(selectEl.options).forEach((option) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'dropdown-item';
+                if (option.value === selectEl.value) {
+                    item.classList.add('active');
+                }
+                item.textContent = option.textContent;
+                item.addEventListener('click', () => {
+                    selectEl.value = option.value;
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    updateLabel();
+                    closeAllDropdowns();
+                    renderMenu();
+                });
+                menuEl.appendChild(item);
+            });
+        };
+
+        triggerEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const willOpen = menuEl.classList.contains('hidden');
+            closeAllDropdowns();
+            if (willOpen) {
+                menuEl.classList.remove('hidden');
+                renderMenu();
+            }
+        });
+
+        selectEl.addEventListener('change', () => {
+            updateLabel();
+            renderMenu();
+        });
+
+        dropdownStates.push({ menu: menuEl, trigger: triggerEl });
+        updateLabel();
+        renderMenu();
+    };
+
+    setupSelectDropdown(sizeInput, sizeBtn, sizeMenu, '선굵기');
+    setupSelectDropdown(fontFamily, fontFamilyBtn, fontFamilyMenu, '폰트');
+    setupSelectDropdown(fontSize, fontSizeBtn, fontSizeMenu, '폰트크기');
+
+    document.addEventListener('click', (e) => {
+        const clickedInside = e.target.closest('.control-dropdown');
+        if (!clickedInside) {
+            closeAllDropdowns();
+        }
+    });
 
     // Action Buttons
     if (undoBtn) {
