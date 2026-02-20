@@ -271,8 +271,8 @@ body {
   background: white;
   position: relative;
   z-index: 1;
-  /* 터치 기기에서 스크롤 대신 그리기가 되도록 */
-  touch-action: none;
+  /* 기본은 스크롤 허용, 그리기는 JS에서 단일 터치일 때만 처리 */
+  touch-action: pan-x pan-y;
 }
 
 /* Text Input Overlay */
@@ -353,17 +353,100 @@ body {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 820px), (pointer: coarse) {
+  .toolbar {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .toolbar-row {
+    gap: 8px;
+  }
+
+  .tool-btn,
+  .action-btn {
+    min-width: 88px;
+    height: 40px;
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+
+  .zoom-btn {
+    min-width: 46px;
+    height: 40px;
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+
+  .named-select {
+    width: 108px;
+    height: 40px;
+    font-size: 14px;
+    padding: 4px 22px 4px 8px;
+    background-position: calc(100% - 12px) 16px, calc(100% - 7px) 16px;
+    background-size: 5px 5px, 5px 5px;
+  }
+
+  #fontFamily {
+    width: 118px;
+  }
+}
+
+@media (max-width: 600px), (max-height: 740px) and (pointer: coarse) {
   body {
     overflow: hidden;
   }
 
+  #app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
   .toolbar {
-    padding: 14px;
+    padding: 4px 10px;
+    gap: 12px;
+    flex-direction: row;
+    /* 휴대폰에서 한 줄로 정렬 */
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    height: 60px;
+    /* 높이 고정 */
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .toolbar-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 0;
+    border-right: 1px solid #ccc;
+    padding-right: 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .toolbar-row:last-child {
+    border-right: none;
   }
 
   .workspace {
-    padding: 12px;
+    padding: 8px;
+    background-color: #e0e0e0;
+    flex: 1;
+    overflow: auto;
+  }
+
+  .toolbar::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .toolbar::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 2px;
   }
 
   .status-bar {
@@ -372,24 +455,28 @@ body {
 
   .tool-btn,
   .action-btn {
-    min-width: 104px;
-    height: 52px;
-    font-size: 18px;
-    padding: 12px 16px;
+    min-width: 68px;
+    height: 34px;
+    font-size: 12px;
+    padding: 4px 8px;
   }
 
-  .zoom-btn,
-  #fontFamily,
+  .zoom-btn {
+    min-width: 44px;
+    height: 36px;
+    font-size: 13px;
+  }
+
   .named-select {
-    height: 52px;
-    font-size: 18px;
+    width: 90px;
+    height: 36px;
+    font-size: 13px;
+    padding: 4px 20px 4px 6px;
+    background-position: calc(100% - 12px) 14px, calc(100% - 6px) 14px;
+    background-size: 5px 5px, 5px 5px;
   }
 
   #fontFamily {
-    width: 156px;
-  }
-
-  .named-select {
-    width: 156px;
+    width: 100px;
   }
 }
