@@ -32,43 +32,54 @@
 
       <!-- Row 2: Settings & Controls -->
       <div class="toolbar-row settings-row">
-        <input type="color" id="colorPicker" value="#000000" title="Color" style="display: none;">
-        <select id="sizeInput" class="named-select" title="선 굵기">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5" selected>5</option>
-          <option value="6">6</option>
-          <option value="7">7</option>
-          <option value="8">8</option>
-          <option value="9">9</option>
-          <option value="10">10</option>
-          <option value="15">15</option>
-          <option value="20">20</option>
-        </select>
-        <select id="fontFamily" class="named-select" title="폰트">
-          <option value="Arial, sans-serif" selected>Arial</option>
-          <option value="Inter, sans-serif">Inter</option>
-          <option value="'Times New Roman', serif">Times</option>
-          <option value="'Courier New', monospace">Courier</option>
-          <option value="Georgia, serif">Georgia</option>
-          <option value="'Brush Script MT', cursive">Brush</option>
-        </select>
-        <select id="fontSize" class="named-select" title="폰트 크기">
-          <option value="8">8</option>
-          <option value="10">10</option>
-          <option value="12">12</option>
-          <option value="14">14</option>
-          <option value="16" selected>16</option>
-          <option value="18">18</option>
-          <option value="20">20</option>
-          <option value="22">22</option>
-          <option value="24">24</option>
-          <option value="26">26</option>
-          <option value="30">30</option>
-          <option value="40">40</option>
-        </select>
+        <div class="control-dropdown">
+          <button class="named-btn" id="sizeBtn" type="button" title="선 굵기">선굵기: 5</button>
+          <div class="dropdown-menu hidden" id="sizeMenu"></div>
+          <select id="sizeInput" class="named-select hidden-native-select" title="선 굵기">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+        <div class="control-dropdown">
+          <button class="named-btn" id="fontFamilyBtn" type="button" title="폰트">폰트: Arial</button>
+          <div class="dropdown-menu hidden" id="fontFamilyMenu"></div>
+          <select id="fontFamily" class="named-select hidden-native-select" title="폰트">
+            <option value="Arial, sans-serif" selected>Arial</option>
+            <option value="Inter, sans-serif">Inter</option>
+            <option value="'Times New Roman', serif">Times</option>
+            <option value="'Courier New', monospace">Courier</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Brush Script MT', cursive">Brush</option>
+          </select>
+        </div>
+        <div class="control-dropdown">
+          <button class="named-btn" id="fontSizeBtn" type="button" title="폰트 크기">폰트크기: 16</button>
+          <div class="dropdown-menu hidden" id="fontSizeMenu"></div>
+          <select id="fontSize" class="named-select hidden-native-select" title="폰트 크기">
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16" selected>16</option>
+            <option value="18">18</option>
+            <option value="20">20</option>
+            <option value="22">22</option>
+            <option value="24">24</option>
+            <option value="26">26</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+          </select>
+        </div>
         <button class="zoom-btn" id="zoomOutBtn" title="축소 (Ctrl+-)">🔍-</button>
         <button class="zoom-btn" id="zoomInBtn" title="확대 (Ctrl++)">🔍+</button>
       </div>
@@ -99,6 +110,21 @@
       <div class="status-item" id="canvasSize">1600 x 1200px</div>
       <div class="status-item" id="zoomLevel">100%</div>
     </footer>
+  </div>
+
+  <div class="color-modal hidden" id="colorModal" aria-hidden="true">
+    <div class="color-modal-backdrop" id="colorModalBackdrop"></div>
+    <div class="color-modal-panel" role="dialog" aria-modal="true" aria-label="색 선택">
+      <div class="color-modal-header">
+        <strong>색 선택</strong>
+        <button class="color-modal-close" id="colorModalClose" type="button">닫기</button>
+      </div>
+      <div class="color-modal-body">
+        <input type="color" id="colorPicker" value="#000000" title="Color">
+        <input type="text" id="colorHexInput" value="#000000" maxlength="7" spellcheck="false">
+      </div>
+      <div class="color-presets" id="colorPresets"></div>
+    </div>
   </div>
   <script type="module" src="./src/main.js"></script>
 </body>
