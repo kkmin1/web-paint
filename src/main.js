@@ -13,6 +13,7 @@ const init = () => {
     const colorPicker = document.getElementById('colorPicker');
     const sizeInput = document.getElementById('sizeInput');
     const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
     const clearBtn = document.getElementById('clearBtn');
     const savePngBtn = document.getElementById('savePngBtn');
     const saveJpgBtn = document.getElementById('saveJpgBtn');
@@ -21,6 +22,8 @@ const init = () => {
     const cropBtn = document.getElementById('cropBtn');
     const canvasSizeDisplay = document.getElementById('canvasSize');
     const cursorPosDisplay = document.getElementById('cursorPos');
+    const colorSelectBtn = document.getElementById('colorSelectBtn');
+    const workspace = document.querySelector('.workspace');
 
     // Tool Selection
     const toolButtons = document.querySelectorAll('[data-tool]');
@@ -33,20 +36,36 @@ const init = () => {
     });
 
     // Color Picker
-    if (colorPicker) {
-        colorPicker.addEventListener('input', (e) => {
-            appState.setColor(e.target.value);
+    const syncColorButton = (color) => {
+        if (colorSelectBtn) {
+            colorSelectBtn.style.background = color;
+            colorSelectBtn.style.color = '#ffffff';
+            colorSelectBtn.style.borderColor = '#2d4f7d';
+        }
+    };
+
+    if (colorSelectBtn && colorPicker) {
+        colorSelectBtn.addEventListener('click', () => {
+            colorPicker.click();
         });
     }
+
+    if (colorPicker) {
+        colorPicker.addEventListener('input', (e) => {
+            const selectedColor = e.target.value;
+            appState.setColor(selectedColor);
+            syncColorButton(selectedColor);
+        });
+    }
+
+    syncColorButton(appState.color);
 
     // Size Input
     if (sizeInput) {
-        sizeInput.addEventListener('input', (e) => {
+        sizeInput.addEventListener('change', (e) => {
             appState.setSize(e.target.value);
         });
     }
-
-
 
     // Font Controls
     const fontFamily = document.getElementById('fontFamily');
@@ -58,22 +77,29 @@ const init = () => {
 
     const fontSize = document.getElementById('fontSize');
     if (fontSize) {
-        fontSize.addEventListener('input', (e) => {
-            appState.fontSize = parseInt(e.target.value) || 24;
+        fontSize.addEventListener('change', (e) => {
+            appState.fontSize = parseInt(e.target.value, 10) || 16;
         });
     }
-
-
 
     // Action Buttons
     if (undoBtn) {
         undoBtn.addEventListener('click', () => {
+            console.log('Undo button clicked');
             appState.undo(ctx, canvas);
+        });
+    }
+
+    if (redoBtn) {
+        redoBtn.addEventListener('click', () => {
+            console.log('Redo button clicked');
+            appState.redo(ctx, canvas);
         });
     }
 
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
+            console.log('Clear button clicked');
             canvasManager.clear();
             appState.saveState(canvas);
         });
@@ -81,10 +107,10 @@ const init = () => {
 
     if (savePngBtn) {
         savePngBtn.addEventListener('click', () => {
+            console.log('Save PNG button clicked');
             const filename = prompt('파일 이름을 입력하세요:', 'painting');
             if (filename) {
                 const link = document.createElement('a');
-                // Add .png extension if not present
                 const finalFilename = filename.endsWith('.png') ? filename : filename + '.png';
                 link.download = finalFilename;
                 link.href = canvas.toDataURL('image/png');
@@ -95,13 +121,21 @@ const init = () => {
 
     if (saveJpgBtn) {
         saveJpgBtn.addEventListener('click', () => {
+            console.log('Save JPG button clicked');
             const filename = prompt('파일 이름을 입력하세요:', 'painting');
             if (filename) {
                 const link = document.createElement('a');
-                // Add .jpg extension if not present
                 const finalFilename = filename.endsWith('.jpg') || filename.endsWith('.jpeg') ? filename : filename + '.jpg';
                 link.download = finalFilename;
-                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                // JPG는 투명도를 지원 안 하므로 흰 배경을 합성한 후 저장
+                const offscreenCanvas = document.createElement('canvas');
+                offscreenCanvas.width = canvas.width;
+                offscreenCanvas.height = canvas.height;
+                const offCtx = offscreenCanvas.getContext('2d');
+                offCtx.fillStyle = '#ffffff';
+                offCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+                offCtx.drawImage(canvas, 0, 0);
+                link.href = offscreenCanvas.toDataURL('image/jpeg', 0.95);
                 link.click();
             }
         });
@@ -110,43 +144,44 @@ const init = () => {
     // Image Import
     if (importBtn && fileInput) {
         importBtn.addEventListener('click', () => {
+            console.log('Import button clicked');
+            // 같은 파일을 다시 로드할 수 있도록 value를 리셋
+            fileInput.value = '';
             fileInput.click();
         });
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) {
-                const img = new Image();
-                const objectUrl = URL.createObjectURL(file);
+            if (!file) return;
 
-                img.onload = () => {
-                    URL.revokeObjectURL(objectUrl);
+            console.log('File selected:', file.name);
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
 
-                    canvas.width = img.width;
-                    canvas.height = img.height;
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
 
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                canvas.width = img.width;
+                canvas.height = img.height;
 
-                    ctx.drawImage(img, 0, 0);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
 
-                    if (canvasSizeDisplay) {
-                        canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
-                    }
+                if (canvasSizeDisplay) {
+                    canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
+                }
 
-                    appState.saveState(canvas);
+                appState.saveState(canvas);
+                updateZoom(1.0);
+            };
 
-                    // Reset zoom to 100% to ensure the image is fully visible and workable
-                    updateZoom(1.0);
-                };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                alert('이미지를 로드할 수 없습니다.');
+            };
 
-                img.onerror = () => {
-                    URL.revokeObjectURL(objectUrl);
-                    alert('이미지를 로드할 수 없습니다.');
-                };
-
-                img.src = objectUrl;
-            }
+            img.src = objectUrl;
         });
     }
 
@@ -158,9 +193,34 @@ const init = () => {
 
     const updateZoom = (newZoom) => {
         appState.setZoom(newZoom);
-        canvasWrapper.style.transform = `scale(${appState.zoomLevel})`;
+        if (canvasWrapper) {
+            canvasWrapper.style.transform = `scale(${appState.zoomLevel})`;
+        }
         if (zoomLevelDisplay) {
             zoomLevelDisplay.textContent = `${Math.round(appState.zoomLevel * 100)}%`;
+        }
+    };
+
+    const fitCanvasToViewport = () => {
+        if (!workspace) return;
+        const targetWidth = Math.max(320, workspace.clientWidth - 20);
+        const targetHeight = Math.max(240, workspace.clientHeight - 20);
+
+        // 기존 이미지 데이터를 보존하면서 리사이즈
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas, 0, 0);
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (canvasSizeDisplay) {
+            canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
         }
     };
 
@@ -180,7 +240,7 @@ const init = () => {
     const updateCropButtonVisibility = () => {
         if (cropBtn) {
             if (appState.selectionActive && appState.selectionRect) {
-                cropBtn.style.display = 'inline-block';
+                cropBtn.style.display = 'inline-flex';
             } else {
                 cropBtn.style.display = 'none';
             }
@@ -196,52 +256,39 @@ const init = () => {
 
         const { x, y, w, h } = appState.selectionRect;
 
-        // Enforce minimum crop size
         if (w < 10 || h < 10) {
             alert('선택 영역이 너무 작습니다. 최소 10x10 픽셀이 필요합니다.');
             return;
         }
 
-        // Clamp to canvas bounds
         const cropX = Math.max(0, Math.min(x, canvas.width));
         const cropY = Math.max(0, Math.min(y, canvas.height));
         const cropW = Math.min(w, canvas.width - cropX);
         const cropH = Math.min(h, canvas.height - cropY);
 
-        // Get the image data from the selection
         const croppedImageData = ctx.getImageData(cropX, cropY, cropW, cropH);
 
-        // Resize canvas
         canvas.width = cropW;
         canvas.height = cropH;
 
-        // Fill with white background
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, cropW, cropH);
-
-        // Draw the cropped content
         ctx.putImageData(croppedImageData, 0, 0);
 
-        // Update canvas size display
         if (canvasSizeDisplay) {
             canvasSizeDisplay.textContent = `${cropW} x ${cropH}px`;
         }
 
-        // Clear selection state
         appState.setSelection(false);
         appState.isFloating = false;
         appState.selectionImageData = null;
         appState.selectionRect = null;
         appState.snapshot = null;
 
-        // Update crop button visibility
         updateCropButtonVisibility();
-
-        // Save state for undo
         appState.saveState(canvas);
     };
 
-    // Crop button click handler
     if (cropBtn) {
         cropBtn.addEventListener('click', () => {
             cropToSelection();
@@ -250,7 +297,6 @@ const init = () => {
 
     // Helper to commit selection
     const commitSelection = () => {
-        console.log('commitSelection called. Active:', appState.selectionActive);
         if (appState.selectionActive) {
             if (appState.isFloating) {
                 if (appState.snapshot) {
@@ -269,14 +315,14 @@ const init = () => {
             appState.selectionRect = null;
             appState.snapshot = null;
 
-            // Update crop button visibility
             updateCropButtonVisibility();
         }
     };
 
     // Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
-        console.log('Keydown:', e.key, e.code, 'Ctrl:', e.ctrlKey);
+        // 텍스트 입력 중에는 단축키 무시
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
         // Zoom shortcuts
         if (e.ctrlKey && (e.key === '+' || e.key === '=' || e.code === 'Equal')) {
@@ -300,29 +346,26 @@ const init = () => {
         // Undo/Redo
         if (e.ctrlKey && (e.key.toLowerCase() === 'z' || e.code === 'KeyZ')) {
             e.preventDefault();
-            console.log('Undo triggered');
             appState.undo(ctx, canvas);
+            return;
         }
 
         if (e.ctrlKey && (e.key.toLowerCase() === 'y' || e.code === 'KeyY')) {
             e.preventDefault();
-            console.log('Redo triggered');
             appState.redo(ctx, canvas);
+            return;
         }
 
         // Clipboard
         if (e.ctrlKey && (e.key.toLowerCase() === 'c' || e.code === 'KeyC')) {
-            console.log('Ctrl+C detected', { active: appState.selectionActive, hasData: !!appState.selectionImageData });
             if (appState.selectionActive && appState.selectionImageData) {
                 appState.clipboard = appState.selectionImageData;
-                console.log('Copied to clipboard', appState.clipboard);
-            } else {
-                console.warn('Copy failed: No active selection');
+                console.log('Copied to clipboard');
             }
+            return;
         }
 
         if (e.ctrlKey && (e.key.toLowerCase() === 'x' || e.code === 'KeyX')) {
-            console.log('Ctrl+X detected', { active: appState.selectionActive, hasData: !!appState.selectionImageData });
             if (appState.selectionActive && appState.selectionImageData) {
                 appState.clipboard = appState.selectionImageData;
 
@@ -343,14 +386,11 @@ const init = () => {
                 appState.selectionImageData = null;
                 appState.selectionRect = null;
                 appState.saveState(canvas);
-                console.log('Cut executed');
-            } else {
-                console.warn('Cut failed: No active selection');
             }
+            return;
         }
 
         if (e.ctrlKey && (e.key.toLowerCase() === 'v' || e.code === 'KeyV')) {
-            console.log('Ctrl+V detected', { clipboard: !!appState.clipboard });
             if (appState.clipboard) {
                 commitSelection();
 
@@ -369,10 +409,8 @@ const init = () => {
                 ctx.putImageData(appState.snapshot, 0, 0);
                 ctx.putImageData(appState.selectionImageData, x, y);
                 tools.select.drawPreview(ctx, x, y, x + w, y + h);
-                console.log('Paste executed');
-            } else {
-                console.warn('Paste failed: Clipboard empty');
             }
+            return;
         }
     });
 
@@ -388,6 +426,10 @@ const init = () => {
     // Canvas Resize Logic
     let isResizing = false;
     let resizeDir = '';
+    let resizeStartX = 0;
+    let resizeStartY = 0;
+    let resizeStartW = 0;
+    let resizeStartH = 0;
 
     const resizeRight = document.getElementById('resizeRight');
     const resizeBottom = document.getElementById('resizeBottom');
@@ -396,6 +438,10 @@ const init = () => {
     const startResize = (e, dir) => {
         isResizing = true;
         resizeDir = dir;
+        resizeStartX = e.clientX;
+        resizeStartY = e.clientY;
+        resizeStartW = canvas.width;
+        resizeStartH = canvas.height;
         e.preventDefault();
     };
 
@@ -405,26 +451,37 @@ const init = () => {
 
     window.addEventListener('mousemove', (e) => {
         if (isResizing) {
-            const rect = canvas.getBoundingClientRect();
+            // 리사이즈: 드래그 델타를 이용해 캔버스 크기 조정
             if (resizeDir === 'right' || resizeDir === 'corner') {
-                const newWidth = Math.max(100, e.clientX - rect.left);
-                canvasManager.resize(newWidth, canvas.height);
+                const newWidth = Math.max(100, resizeStartW + (e.clientX - resizeStartX) / appState.zoomLevel);
+                canvas.width = Math.round(newWidth);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
             if (resizeDir === 'bottom' || resizeDir === 'corner') {
-                const newHeight = Math.max(100, e.clientY - rect.top);
-                canvasManager.resize(canvas.width, newHeight);
+                const newHeight = Math.max(100, resizeStartH + (e.clientY - resizeStartY) / appState.zoomLevel);
+                canvas.height = Math.round(newHeight);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
-            canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
+            if (canvasSizeDisplay) {
+                canvasSizeDisplay.textContent = `${canvas.width} x ${canvas.height}px`;
+            }
         }
 
-        if (e.target === canvas) {
-            cursorPosDisplay.textContent = `${e.offsetX}, ${e.offsetY}px`;
+        // 커서 위치 표시
+        if (e.target === canvas && cursorPosDisplay) {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.round((e.clientX - rect.left) / appState.zoomLevel);
+            const y = Math.round((e.clientY - rect.top) / appState.zoomLevel);
+            cursorPosDisplay.textContent = `${x}, ${y}px`;
         }
     });
 
     window.addEventListener('mouseup', () => {
         if (isResizing) {
             isResizing = false;
+            // 리사이즈 후 상태 저장 (현재 흰 캔버스 상태)
             appState.saveState(canvas);
         }
     });
@@ -448,7 +505,7 @@ const init = () => {
         }
 
         const rect = canvas.getBoundingClientRect();
-        // Account for zoom level - convert viewport coordinates to canvas coordinates
+        // 줌 레벨을 고려해 뷰포트 좌표를 캔버스 좌표로 변환
         const x = (clientX - rect.left) / appState.zoomLevel;
         const y = (clientY - rect.top) / appState.zoomLevel;
 
@@ -459,9 +516,12 @@ const init = () => {
         if (e.type === 'touchstart') {
             e.preventDefault();
         }
+        // 리사이즈 중이면 그리기 무시
+        if (isResizing) return;
 
         const { x, y } = getCoordinates(e);
 
+        // 선택 도구: 이미 선택 영역이 있고 그 안을 클릭하면 이동 모드
         if (appState.tool === 'select') {
             if (appState.selectionActive && appState.selectionRect) {
                 const { x: sx, y: sy, w, h } = appState.selectionRect;
@@ -469,10 +529,19 @@ const init = () => {
                     appState.isMovingSelection = true;
                     startX = x;
                     startY = y;
-                    return;
+                    appState.originalSelectionRect = { ...appState.selectionRect };
+                    return; // 이동 모드 시작, 새 선택 시작 안 함
                 }
             }
+            // 선택 영역 바깥 클릭 시 기존 선택 커밋 후 새 선택 시작
             commitSelection();
+            isDrawing = true;
+            startX = x;
+            startY = y;
+            appState.startX = x;
+            appState.startY = y;
+            appState.snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            return;
         }
 
         isDrawing = true;
@@ -486,13 +555,11 @@ const init = () => {
             appState.saveState(canvas);
             isDrawing = false;
         } else if (appState.tool === 'text') {
-            console.log('Text tool activated! Creating input at canvas coords:', x, y);
             const textInput = document.createElement('input');
             textInput.type = 'text';
             textInput.className = 'text-input-overlay';
             textInput.style.position = 'fixed';
 
-            // Convert canvas coordinates to viewport coordinates
             const rect = canvas.getBoundingClientRect();
             const zoom = appState.zoomLevel || 1;
             const viewportX = rect.left + (x * zoom);
@@ -500,18 +567,16 @@ const init = () => {
 
             textInput.style.left = `${viewportX}px`;
             textInput.style.top = `${viewportY}px`;
-            textInput.style.fontSize = `${appState.fontSize}px`;
+            textInput.style.fontSize = `${appState.fontSize * zoom}px`;
             textInput.style.fontFamily = appState.fontFamily;
             textInput.style.zIndex = '10000';
-            console.log('Text input positioned at viewport:', viewportX, viewportY);
 
             const finishText = () => {
                 const text = textInput.value;
-                console.log('Finishing text, value:', text);
                 if (text) {
                     ctx.font = `${appState.fontSize}px ${appState.fontFamily}`;
                     ctx.fillStyle = appState.color;
-                    ctx.fillText(text, x, y);
+                    ctx.fillText(text, x, y + appState.fontSize); // baseline 보정
                     appState.saveState(canvas);
                 }
                 if (document.body.contains(textInput)) {
@@ -535,22 +600,19 @@ const init = () => {
             textInput.addEventListener('blur', finishText);
 
             document.body.appendChild(textInput);
-            console.log('Text input appended to body');
             setTimeout(() => {
                 textInput.focus();
-                console.log('Text input focused');
             }, 10);
             isDrawing = false;
-        } else if (appState.tool === 'select') {
-            appState.snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        } else if (['pencil', 'brush', 'eraser'].includes(appState.tool)) {
-            ctx.strokeStyle = appState.color;
+        } else if (['brush', 'pencil', 'eraser'].includes(appState.tool)) {
+            ctx.strokeStyle = appState.tool === 'eraser' ? '#ffffff' : appState.color;
             ctx.lineWidth = appState.size;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.beginPath();
             ctx.moveTo(x, y);
         } else {
+            // 도형 도구 (rect, ellipse, line, triangle 등): 스냅샷 저장
             appState.snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
     };
@@ -564,6 +626,7 @@ const init = () => {
 
         const { x, y } = getCoordinates(e);
 
+        // 선택 영역 이동
         if (appState.isMovingSelection && appState.selectionRect && appState.selectionImageData) {
             const dx = x - startX;
             const dy = y - startY;
@@ -576,9 +639,11 @@ const init = () => {
             appState.selectionRect.y = appState.originalSelectionRect.y + dy;
 
             ctx.putImageData(appState.selectionImageData, appState.selectionRect.x, appState.selectionRect.y);
-            tools.select.drawPreview(ctx, appState.selectionRect.x, appState.selectionRect.y,
+            tools.select.drawPreview(ctx,
+                appState.selectionRect.x, appState.selectionRect.y,
                 appState.selectionRect.x + appState.selectionRect.w,
-                appState.selectionRect.y + appState.selectionRect.h);
+                appState.selectionRect.y + appState.selectionRect.h
+            );
             return;
         }
 
@@ -587,12 +652,12 @@ const init = () => {
                 ctx.putImageData(appState.snapshot, 0, 0);
             }
             tools.select.drawPreview(ctx, startX, startY, x, y);
-        } else if (['pencil', 'brush', 'eraser'].includes(appState.tool)) {
+        } else if (['brush', 'pencil', 'eraser'].includes(appState.tool)) {
             const tool = tools[appState.tool];
             if (tool && tool.draw) {
                 tool.draw(ctx, x, y);
             }
-        } else if (['rect', 'circle', 'ellipse', 'line'].includes(appState.tool)) {
+        } else if (['rect', 'circle', 'ellipse', 'line', 'triangle'].includes(appState.tool)) {
             if (appState.snapshot) {
                 ctx.putImageData(appState.snapshot, 0, 0);
             }
@@ -608,14 +673,36 @@ const init = () => {
     const stopDrawing = (e) => {
         if (!isDrawing && !appState.isMovingSelection) return;
 
+        // 선택 이동 완료
         if (appState.isMovingSelection) {
             appState.isMovingSelection = false;
             appState.originalSelectionRect = { ...appState.selectionRect };
-            appState.saveState(canvas);
+            // 이동 후 snapshot 업데이트 (이동된 이미지를 포함)
+            if (appState.snapshot) {
+                ctx.putImageData(appState.snapshot, 0, 0);
+            }
+            if (appState.selectionImageData && appState.selectionRect) {
+                ctx.putImageData(appState.selectionImageData, appState.selectionRect.x, appState.selectionRect.y);
+            }
+            appState.snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            // 선택 영역 다시 그리기
+            if (appState.selectionRect) {
+                tools.select.drawPreview(ctx,
+                    appState.selectionRect.x, appState.selectionRect.y,
+                    appState.selectionRect.x + appState.selectionRect.w,
+                    appState.selectionRect.y + appState.selectionRect.h
+                );
+            }
             return;
         }
 
-        const { x, y } = getCoordinates(e);
+        // e가 없거나 mouseleave의 경우 마지막 좌표 사용
+        let x = startX, y = startY;
+        if (e && (e.clientX !== undefined || e.touches || e.changedTouches)) {
+            const coords = getCoordinates(e);
+            x = coords.x;
+            y = coords.y;
+        }
 
         if (appState.tool === 'select') {
             const w = x - startX;
@@ -638,12 +725,25 @@ const init = () => {
                 ctx.putImageData(imageData, rx, ry);
                 tools.select.drawPreview(ctx, rx, ry, rx + rw, ry + rh);
 
-                // Show crop button
                 updateCropButtonVisibility();
+            } else {
+                // 너무 작은 선택은 취소
+                if (appState.snapshot) {
+                    ctx.putImageData(appState.snapshot, 0, 0);
+                }
             }
-        } else if (['pencil', 'brush', 'eraser'].includes(appState.tool)) {
+        } else if (['brush', 'pencil', 'eraser'].includes(appState.tool)) {
             appState.saveState(canvas);
-        } else if (['rect', 'circle', 'ellipse', 'line'].includes(appState.tool)) {
+        } else if (['rect', 'circle', 'ellipse', 'line', 'triangle'].includes(appState.tool)) {
+            if (appState.snapshot) {
+                ctx.putImageData(appState.snapshot, 0, 0);
+            }
+            ctx.strokeStyle = appState.color;
+            ctx.lineWidth = appState.size;
+            const tool = tools[appState.tool];
+            if (tool && tool.drawPreview) {
+                tool.drawPreview(ctx, startX, startY, x, y);
+            }
             appState.saveState(canvas);
         }
 
@@ -653,7 +753,12 @@ const init = () => {
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseleave', stopDrawing);
+    canvas.addEventListener('mouseleave', (e) => {
+        // mouseleave 시 그리기 중이었으면 종료
+        if (isDrawing) {
+            stopDrawing(e);
+        }
+    });
 
     // Touch Event Listeners
     canvas.addEventListener('touchstart', startDrawing, { passive: false });
@@ -662,7 +767,16 @@ const init = () => {
     canvas.addEventListener('touchcancel', stopDrawing);
 
     // Initialize
+    fitCanvasToViewport();
     appState.saveState(canvas);
+    console.log('Initialization complete.');
 };
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        init();
+    } catch (error) {
+        console.error('Initialization failed:', error);
+        alert('초기화 오류가 발생했습니다. 새로고침 후 다시 시도해주세요.');
+    }
+});

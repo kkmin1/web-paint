@@ -19,12 +19,9 @@ export const tools = {
     },
     eraser: {
         draw: (ctx, x, y) => {
-            // Use white color to erase
-            const prevColor = ctx.strokeStyle;
-            ctx.strokeStyle = '#ffffff';
+            // main.js의 startDrawing에서 이미 strokeStyle을 #ffffff로 설정함
             ctx.lineTo(x, y);
             ctx.stroke();
-            ctx.strokeStyle = prevColor;
         }
     },
     rect: {
@@ -58,9 +55,11 @@ export const tools = {
         drawPreview: (ctx, startX, startY, x, y) => {
             ctx.globalAlpha = appState.opacity;
             ctx.beginPath();
-            const radiusX = Math.abs(x - startX);
-            const radiusY = Math.abs(y - startY);
-            ctx.ellipse(startX, startY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+            const radiusX = Math.abs(x - startX) / 2;
+            const radiusY = Math.abs(y - startY) / 2;
+            const centerX = startX + (x - startX) / 2;
+            const centerY = startY + (y - startY) / 2;
+            ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
             if (appState.isFill) {
                 ctx.fillStyle = appState.color;
                 ctx.fill();
@@ -79,11 +78,34 @@ export const tools = {
             ctx.globalAlpha = 1.0;
         }
     },
+    triangle: {
+        drawPreview: (ctx, startX, startY, x, y) => {
+            ctx.globalAlpha = appState.opacity;
+            const topX = (startX + x) / 2;
+            const topY = startY;
+            const leftX = startX;
+            const leftY = y;
+            const rightX = x;
+            const rightY = y;
+
+            ctx.beginPath();
+            ctx.moveTo(topX, topY);
+            ctx.lineTo(leftX, leftY);
+            ctx.lineTo(rightX, rightY);
+            ctx.closePath();
+            if (appState.isFill) {
+                ctx.fillStyle = appState.color;
+                ctx.fill();
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+    },
     text: {
         action: (ctx, x, y, text) => {
             if (!text) return;
             ctx.globalAlpha = appState.opacity;
-            ctx.font = `${appState.size * 2}px Inter, sans-serif`; // Scale font size
+            ctx.font = `${appState.fontSize}px ${appState.fontFamily}`;
             ctx.fillStyle = appState.color;
             ctx.fillText(text, x, y);
             ctx.globalAlpha = 1.0;
@@ -91,7 +113,6 @@ export const tools = {
     },
     fill: {
         action: (ctx, x, y, color) => {
-            // Flood fill implementation (Opacity not typically applied to flood fill in simple paint apps, keeping as is)
             const canvas = ctx.canvas;
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
@@ -135,13 +156,15 @@ export const tools = {
     },
     select: {
         drawPreview: (ctx, startX, startY, x, y) => {
+            ctx.save();
             ctx.setLineDash([5, 5]);
             ctx.lineWidth = 1;
-            ctx.strokeStyle = '#000';
+            ctx.strokeStyle = '#0066ff';
+            ctx.globalAlpha = 1.0;
             ctx.beginPath();
             ctx.rect(startX, startY, x - startX, y - startY);
             ctx.stroke();
-            ctx.setLineDash([]);
+            ctx.restore();
         }
     }
 };

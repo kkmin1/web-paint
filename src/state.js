@@ -20,8 +20,8 @@ export class State {
     this.originalSelectionRect = null;
 
     // Text Tool State
-    this.fontFamily = 'Inter, sans-serif';
-    this.fontSize = 24;
+    this.fontFamily = 'Arial, sans-serif';
+    this.fontSize = 16;
     this.isBold = false;
     this.isItalic = false;
 
