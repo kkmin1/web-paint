@@ -704,12 +704,10 @@ body {
 
   .toolbar-row {
     width: 100%;
-    flex-wrap: wrap;
     gap: 8px;
     padding: 0 0 8px;
     border-right: none;
     border-bottom: 1px solid #ccc;
-    display: flex;
     align-items: stretch;
   }
 
@@ -718,25 +716,41 @@ body {
     padding-bottom: 0;
   }
 
-  .toolbar-row:first-child > * {
-    flex: 0 0 38px;
+  .toolbar-row:first-child {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .toolbar-row:first-child > .text-tool-btn {
-    flex: 1 1 78px;
+    grid-column: span 2;
+  }
+
+  .toolbar-row.settings-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar-row.actions-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .settings-row .control-dropdown,
   .settings-row .zoom-btn,
   .actions-row > * {
-    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
   }
 
-  .tool-btn,
-  .action-btn,
-  .zoom-btn,
-  .named-btn {
+  .toolbar-row:first-child > *,
+  .toolbar-row.settings-row > *,
+  .toolbar-row.actions-row > * {
     width: 100%;
+  }
+
+  .toolbar-row.actions-row > .load-btn,
+  .toolbar-row.actions-row > .save-dropdown,
+  .toolbar-row.actions-row > .clear-btn {
+    grid-column: span 2;
   }
 
   .workspace {
@@ -815,6 +829,10 @@ body {
   .named-select,
   #fontFamily {
     width: 100%;
+  }
+
+  .save-dropdown {
+    min-width: 0;
   }
 
   .dropdown-item {
