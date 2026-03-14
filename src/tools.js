@@ -157,9 +157,11 @@ export const tools = {
     select: {
         drawPreview: (ctx, startX, startY, x, y) => {
             ctx.save();
-            ctx.setLineDash([5, 5]);
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = '#0066ff';
+            ctx.setLineDash([8, 4]);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#0047d4';
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
+            ctx.shadowBlur = 1;
             ctx.globalAlpha = 1.0;
             ctx.beginPath();
             ctx.rect(startX, startY, x - startX, y - startY);
