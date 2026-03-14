@@ -75,9 +75,10 @@ body {
 
 /* Tool Buttons (Row 1) */
 .tool-btn {
-  min-width: 140px;
+  min-width: 60px;
+  width: 60px;
   height: 60px;
-  padding: 14px 24px;
+  padding: 12px;
   border: 2px solid #3d5a47;
   background: linear-gradient(to bottom, #5a8c69, #4a7c59);
   color: white;
@@ -92,6 +93,45 @@ body {
   justify-content: center;
   text-align: center;
   line-height: 1;
+}
+
+.text-tool-btn {
+  width: auto;
+  min-width: 92px;
+  padding: 12px 14px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tool-text-glyph {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tool-btn svg,
+.icon-action-btn svg {
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tool-btn svg rect,
+.tool-btn svg ellipse,
+.tool-btn svg circle,
+.tool-btn svg path,
+.icon-action-btn svg path {
+  vector-effect: non-scaling-stroke;
+}
+
+.icon-tool-btn {
+  flex: 0 0 60px;
 }
 
 .tool-btn:hover {
@@ -142,7 +182,7 @@ body {
 
 /* Number Inputs / Select */
 .named-select {
-  width: 224px;
+  width: 188px;
   height: 60px;
   padding: 8px 44px 8px 16px;
   border: 2px solid #999;
@@ -166,6 +206,7 @@ body {
 
 .control-dropdown {
   position: relative;
+  min-width: 0;
 }
 
 .hidden-native-select {
@@ -177,7 +218,7 @@ body {
 }
 
 .named-btn {
-  width: 224px;
+  width: 188px;
   height: 60px;
   padding: 8px 34px 8px 16px;
   border: 2px solid #999;
@@ -241,12 +282,12 @@ body {
 
 /* Font Family Dropdown */
 #fontFamily {
-  width: 240px;
+  width: 196px;
 }
 
 /* Action Buttons (Row 3) */
 .action-btn {
-  min-width: 160px;
+  min-width: 120px;
   height: 60px;
   padding: 14px 24px;
   border: 2px solid rgba(0, 0, 0, 0.2);
@@ -264,6 +305,14 @@ body {
   line-height: 1;
 }
 
+.icon-action-btn {
+  min-width: 60px;
+  width: 60px;
+  padding: 12px;
+  font-size: 30px;
+  font-weight: 700;
+}
+
 .undo-btn {
   background: linear-gradient(to bottom, #FFD54F, #FFC107);
   color: #000;
@@ -275,16 +324,22 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
-.save-png-btn,
-.save-jpg-btn {
+.save-btn {
   background: linear-gradient(to bottom, #26C6DA, #00BCD4);
   border-color: #00ACC1;
 }
 
-.save-png-btn:hover,
-.save-jpg-btn:hover {
+.save-btn:hover {
   background: linear-gradient(to bottom, #4DD0E1, #26C6DA);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.save-dropdown {
+  min-width: 140px;
+}
+
+.save-dropdown .dropdown-menu {
+  min-width: 160px;
 }
 
 .load-btn {
@@ -330,6 +385,7 @@ body {
   padding: 20px;
   position: relative;
   min-height: 0;
+  cursor: default;
 }
 
 .canvas-wrapper {
@@ -339,6 +395,16 @@ body {
   transform-origin: top left;
   /* transition 제거: 줌 애니메이션 중 getBoundingClientRect 오류 방지 */
   border: 1px solid #999;
+}
+
+.workspace.is-panning,
+.workspace.is-panning .canvas-wrapper {
+  cursor: grabbing;
+}
+
+.workspace.pan-ready,
+.workspace.pan-ready .canvas-wrapper {
+  cursor: grab;
 }
 
 #canvas {
@@ -507,7 +573,7 @@ body {
 
   .tool-btn,
   .action-btn {
-    min-width: 120px;
+    min-width: 56px;
     font-size: 20px;
   }
 
@@ -524,25 +590,47 @@ body {
 
   .toolbar-row {
     gap: 8px;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .toolbar-row > * {
+    min-width: 0;
+  }
+
+  .toolbar-row:first-child > * {
+    flex: 0 0 40px;
+  }
+
+  .settings-row .control-dropdown {
+    flex: 1 1 132px;
+  }
+
+  .settings-row .zoom-btn {
+    flex: 0 0 56px;
+  }
+
+  .actions-row > * {
+    flex: 1 1 96px;
   }
 
   .tool-btn,
   .action-btn {
-    min-width: 88px;
+    min-width: 0;
     height: 40px;
     font-size: 14px;
     padding: 6px 10px;
   }
 
   .zoom-btn {
-    min-width: 46px;
+    min-width: 0;
     height: 40px;
     font-size: 14px;
     padding: 6px 10px;
   }
 
   .named-select {
-    width: 108px;
+    width: 94px;
     height: 40px;
     font-size: 14px;
     padding: 4px 22px 4px 8px;
@@ -551,19 +639,42 @@ body {
   }
 
   #fontFamily {
-    width: 118px;
+    width: 102px;
   }
 
   .named-btn {
-    width: 118px;
+    width: 102px;
     height: 40px;
     font-size: 14px;
     padding: 4px 22px 4px 8px;
   }
 
+  .text-tool-btn {
+    min-width: 74px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  .tool-text-glyph {
+    font-size: 22px;
+  }
+
   .dropdown-item {
     font-size: 14px;
     padding: 8px 8px;
+  }
+
+  .icon-tool-btn,
+  .icon-action-btn {
+    width: 40px;
+    flex-basis: 40px;
+    padding: 8px;
+  }
+
+  .tool-btn svg,
+  .icon-action-btn svg {
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -579,33 +690,53 @@ body {
   }
 
   .toolbar {
-    padding: 4px 10px;
-    gap: 12px;
-    flex-direction: row;
-    /* 휴대폰에서 한 줄로 정렬 */
-    overflow-x: auto;
-    overflow-y: hidden;
-    white-space: nowrap;
+    padding: 8px 10px;
+    gap: 8px;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    white-space: normal;
     -webkit-overflow-scrolling: touch;
-    height: 60px;
-    /* 높이 고정 */
-    align-items: center;
+    height: auto;
+    align-items: stretch;
     border-bottom: 1px solid var(--border-color);
   }
 
   .toolbar-row {
-    flex-wrap: nowrap;
+    width: 100%;
+    flex-wrap: wrap;
     gap: 8px;
-    padding: 0;
-    border-right: 1px solid #ccc;
-    padding-right: 12px;
-    height: 100%;
+    padding: 0 0 8px;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
     display: flex;
-    align-items: center;
+    align-items: stretch;
   }
 
   .toolbar-row:last-child {
-    border-right: none;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .toolbar-row:first-child > * {
+    flex: 0 0 38px;
+  }
+
+  .toolbar-row:first-child > .text-tool-btn {
+    flex: 1 1 78px;
+  }
+
+  .settings-row .control-dropdown,
+  .settings-row .zoom-btn,
+  .actions-row > * {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .tool-btn,
+  .action-btn,
+  .zoom-btn,
+  .named-btn {
+    width: 100%;
   }
 
   .workspace {
@@ -616,7 +747,7 @@ body {
   }
 
   .toolbar::-webkit-scrollbar {
-    height: 3px;
+    width: 3px;
   }
 
   .toolbar::-webkit-scrollbar-thumb {
@@ -630,20 +761,33 @@ body {
 
   .tool-btn,
   .action-btn {
-    min-width: 68px;
-    height: 34px;
+    min-width: 0;
+    height: 38px;
     font-size: 12px;
     padding: 4px 8px;
   }
 
   .zoom-btn {
-    min-width: 44px;
-    height: 36px;
+    min-width: 0;
+    height: 38px;
     font-size: 13px;
   }
 
+  .icon-tool-btn,
+  .icon-action-btn {
+    width: 38px;
+    flex-basis: 38px;
+    padding: 7px;
+  }
+
+  .tool-btn svg,
+  .icon-action-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
   .named-select {
-    width: 90px;
+    width: 80px;
     height: 36px;
     font-size: 13px;
     padding: 4px 20px 4px 6px;
@@ -651,15 +795,26 @@ body {
     background-size: 5px 5px, 5px 5px;
   }
 
-  #fontFamily {
-    width: 100px;
-  }
-
   .named-btn {
-    width: 100px;
-    height: 36px;
+    width: 100%;
+    height: 38px;
     font-size: 13px;
     padding: 4px 20px 4px 6px;
+  }
+
+  .text-tool-btn {
+    min-width: 68px;
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .tool-text-glyph {
+    font-size: 20px;
+  }
+
+  .named-select,
+  #fontFamily {
+    width: 100%;
   }
 
   .dropdown-item {
