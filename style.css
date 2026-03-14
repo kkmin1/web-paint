@@ -709,6 +709,10 @@ body {
     border-right: none;
     border-bottom: 1px solid #ccc;
     align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
   }
 
   .toolbar-row:last-child {
@@ -717,22 +721,22 @@ body {
   }
 
   .toolbar-row:first-child {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
   }
 
   .toolbar-row:first-child > .text-tool-btn {
-    grid-column: span 2;
+    flex: 0 0 92px;
   }
 
   .toolbar-row.settings-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
   }
 
   .toolbar-row.actions-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
   }
 
   .settings-row .control-dropdown,
@@ -741,16 +745,54 @@ body {
     min-width: 0;
   }
 
-  .toolbar-row:first-child > *,
-  .toolbar-row.settings-row > *,
-  .toolbar-row.actions-row > * {
-    width: 100%;
+  .settings-row .control-dropdown {
+    flex: 0 0 128px;
   }
 
-  .toolbar-row.actions-row > .load-btn,
-  .toolbar-row.actions-row > .save-dropdown,
+  .settings-row .zoom-btn {
+    display: flex;
+    flex: 0 0 52px;
+  }
+
+  .toolbar-row:first-child > * {
+    flex: 0 0 48px;
+  }
+
+  .toolbar-row.actions-row > * {
+    flex: 0 0 auto;
+  }
+
+  .save-dropdown .action-btn {
+    width: 96px;
+    min-width: 96px;
+  }
+
+  .toolbar-row.actions-row > #zoomInBtn {
+    order: 1;
+  }
+
+  .toolbar-row.actions-row > #zoomOutBtn {
+    order: 2;
+  }
+
+  .toolbar-row.actions-row > #undoBtn {
+    order: 3;
+  }
+
+  .toolbar-row.actions-row > #redoBtn {
+    order: 4;
+  }
+
+  .toolbar-row.actions-row > .load-btn {
+    order: 5;
+  }
+
+  .toolbar-row.actions-row > .save-dropdown {
+    order: 6;
+  }
+
   .toolbar-row.actions-row > .clear-btn {
-    grid-column: span 2;
+    order: 7;
   }
 
   .workspace {
@@ -782,7 +824,7 @@ body {
   }
 
   .zoom-btn {
-    min-width: 0;
+    min-width: 52px;
     height: 38px;
     font-size: 13px;
   }
@@ -810,7 +852,7 @@ body {
   }
 
   .named-btn {
-    width: 100%;
+    width: 128px;
     height: 38px;
     font-size: 13px;
     padding: 4px 20px 4px 6px;
@@ -828,11 +870,11 @@ body {
 
   .named-select,
   #fontFamily {
-    width: 100%;
+    width: 128px;
   }
 
   .save-dropdown {
-    min-width: 0;
+    min-width: 96px;
   }
 
   .dropdown-item {
