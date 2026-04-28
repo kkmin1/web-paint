@@ -374,9 +374,9 @@ const init = () => {
 
     const syncColorButton = (color) => {
         if (!ui.colorSelectBtn) return;
-        ui.colorSelectBtn.style.background = color;
         ui.colorSelectBtn.style.color = '#ffffff';
-        ui.colorSelectBtn.style.borderColor = '#2d4f7d';
+        ui.colorSelectBtn.style.borderColor = color;
+        ui.colorSelectBtn.style.boxShadow = `inset 0 -8px 0 ${color}, 0 2px 4px rgba(0, 0, 0, 0.2)`;
     };
 
     const applyColor = (color) => {
@@ -628,13 +628,18 @@ const init = () => {
             textInput.style.top = `${rect.top + (y * zoom)}px`;
             textInput.style.fontSize = `${appState.fontSize * zoom}px`;
             textInput.style.fontFamily = appState.fontFamily;
+            textInput.style.textAlign = 'center';
 
             const finishText = () => {
                 const text = textInput.value.trim();
                 if (text) {
+                    ctx.save();
                     ctx.font = `${appState.fontSize}px ${appState.fontFamily}`;
                     ctx.fillStyle = appState.color;
-                    ctx.fillText(text, x, y + appState.fontSize);
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(text, x, y);
+                    ctx.restore();
                     appState.saveState(canvas);
                 }
                 if (document.body.contains(textInput)) {

@@ -25,11 +25,7 @@
           </svg>
         </button>
         <button class="tool-btn icon-tool-btn" data-tool="eraser" title="지우개" aria-label="지우개">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 16.5L14.8 8.7l4.5 4.5-5.2 5.3H8.8L7 16.5z"></path>
-            <path d="M4.7 14.2l7.1-7.1a2 2 0 0 1 2.8 0l.9.9-7.8 7.8-.9-.9a2 2 0 0 1 0-2.7z"></path>
-            <path d="M14 18.5h6"></path>
-          </svg>
+          <img class="tool-icon-image" src="./assets/eraser.png" alt="" aria-hidden="true">
         </button>
         <button class="tool-btn icon-tool-btn" data-tool="line" title="직선" aria-label="직선">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -43,15 +39,6 @@
             <rect x="4.5" y="6" width="15" height="12" rx="1.5"></rect>
           </svg>
         </button>
-        <button class="tool-btn color-select-btn icon-tool-btn" id="colorSelectBtn" title="색 선택" aria-label="색 선택">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3c-5 0-9 3.6-9 8 0 3.3 2.5 5 4.8 5H9a1.5 1.5 0 0 1 1.5 1.5c0 1.4 1.1 2.5 2.5 2.5 4.4 0 8-4 8-9s-4-8-9-8z"></path>
-            <circle cx="7.5" cy="10" r="1"></circle>
-            <circle cx="10" cy="7.5" r="1"></circle>
-            <circle cx="14" cy="7.5" r="1"></circle>
-            <circle cx="16.5" cy="10" r="1"></circle>
-          </svg>
-        </button>
         <button class="tool-btn icon-tool-btn" data-tool="triangle" title="삼각형" aria-label="삼각형">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 5l8 14H4L12 5z"></path>
@@ -63,7 +50,7 @@
           </svg>
         </button>
         <button class="tool-btn icon-tool-btn" data-tool="text" title="텍스트" aria-label="텍스트">
-          <span class="tool-text-glyph" aria-hidden="true">T</span>
+          <span class="tool-text-word" aria-hidden="true">text</span>
         </button>
         <button class="tool-btn text-tool-btn" data-tool="select" title="영역선택" aria-label="영역선택">
           영역선택
@@ -121,6 +108,23 @@
             <option value="40">40</option>
           </select>
         </div>
+        <button class="tool-btn color-select-btn icon-tool-btn" id="colorSelectBtn" title="색 선택" aria-label="색 선택">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <defs>
+              <linearGradient id="paletteGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff5f6d"></stop>
+                <stop offset="35%" stop-color="#ffc371"></stop>
+                <stop offset="68%" stop-color="#52c234"></stop>
+                <stop offset="100%" stop-color="#36d1dc"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M12 3c-5 0-9 3.6-9 8 0 3.3 2.5 5 4.8 5H9a1.5 1.5 0 0 1 1.5 1.5c0 1.4 1.1 2.5 2.5 2.5 4.4 0 8-4 8-9s-4-8-9-8z" fill="url(#paletteGradient)" stroke="#21415f" stroke-width="1.2"></path>
+            <circle cx="7.5" cy="10" r="1.25" fill="#ffffff"></circle>
+            <circle cx="10" cy="7.5" r="1.25" fill="#4f46e5"></circle>
+            <circle cx="14" cy="7.5" r="1.25" fill="#f43f5e"></circle>
+            <circle cx="16.5" cy="10" r="1.25" fill="#facc15"></circle>
+          </svg>
+        </button>
         <button class="zoom-btn" id="zoomOutBtn" title="축소 (Ctrl+-)">🔍-</button>
         <button class="zoom-btn" id="zoomInBtn" title="확대 (Ctrl++)">🔍+</button>
       </div>
@@ -129,10 +133,10 @@
       <div class="toolbar-row actions-row">
         <button class="action-btn load-btn" id="importBtn" title="불러오기">불러오기</button>
         <button class="action-btn undo-btn icon-action-btn" id="undoBtn" title="뒤로가기" aria-label="뒤로가기">
-          <span aria-hidden="true">&larr;</span>
+          <img class="action-icon-image" src="./assets/undo.png" alt="" aria-hidden="true">
         </button>
         <button class="action-btn undo-btn icon-action-btn" id="redoBtn" title="앞으로 가기" aria-label="앞으로 가기">
-          <span aria-hidden="true">&rarr;</span>
+          <img class="action-icon-image" src="./assets/redo.png" alt="" aria-hidden="true">
         </button>
         <div class="control-dropdown save-dropdown">
           <button class="action-btn save-btn" id="saveBtn" type="button" title="저장">저장</button>
