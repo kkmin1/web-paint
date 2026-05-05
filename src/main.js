@@ -162,22 +162,71 @@ const init = () => {
         dropdownStates.forEach(({ menu }) => menu.classList.add('hidden'));
     };
 
-    const toggleDropdown = (menuEl, onOpen) => {
+    const isTouchLike = () => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+
+    const positionMobileSaveMenu = (triggerEl, menuEl) => {
+        menuEl.style.position = '';
+        menuEl.style.left = '';
+        menuEl.style.top = '';
+        menuEl.style.width = '';
+        menuEl.style.zIndex = '';
+
+        if (!isTouchLike() || !triggerEl.closest('.save-dropdown')) return;
+
+        const rect = triggerEl.getBoundingClientRect();
+        const menuWidth = Math.max(160, rect.width);
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8));
+
+        menuEl.style.position = 'fixed';
+        menuEl.style.left = `${left}px`;
+        menuEl.style.top = `${rect.bottom + 6}px`;
+        menuEl.style.width = `${menuWidth}px`;
+        menuEl.style.zIndex = '30000';
+    };
+
+    const toggleDropdown = (triggerEl, menuEl, onOpen) => {
         if (!menuEl) return;
         const willOpen = menuEl.classList.contains('hidden');
         closeAllDropdowns();
         if (willOpen) {
             onOpen?.();
+            positionMobileSaveMenu(triggerEl, menuEl);
             menuEl.classList.remove('hidden');
         }
     };
 
+    const addPressHandler = (element, handler) => {
+        if (!element) return;
+        let suppressClick = false;
+
+        const run = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handler(event);
+        };
+
+        if (window.PointerEvent) {
+            element.addEventListener('pointerup', (event) => {
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                suppressClick = true;
+                run(event);
+                setTimeout(() => { suppressClick = false; }, 500);
+            });
+        }
+
+        element.addEventListener('click', (event) => {
+            if (suppressClick) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+            run(event);
+        });
+    };
+
     const registerDropdown = (triggerEl, menuEl, onOpen) => {
         if (!triggerEl || !menuEl) return;
-        triggerEl.addEventListener('click', (event) => {
-            event.stopPropagation();
-            toggleDropdown(menuEl, onOpen);
-        });
+        addPressHandler(triggerEl, () => toggleDropdown(triggerEl, menuEl, onOpen));
         dropdownStates.push({ menu: menuEl, trigger: triggerEl });
     };
 
@@ -197,13 +246,15 @@ const init = () => {
                 item.className = 'dropdown-item';
                 item.textContent = option.textContent;
                 if (option.value === selectEl.value) item.classList.add('active');
-                item.addEventListener('click', () => {
+
+                addPressHandler(item, () => {
                     selectEl.value = option.value;
                     selectEl.dispatchEvent(new Event('change', { bubbles: true }));
                     updateLabel();
                     closeAllDropdowns();
                     renderMenu();
                 });
+
                 menuEl.appendChild(item);
             });
         };
@@ -229,13 +280,44 @@ const init = () => {
         return offscreenCanvas;
     };
 
-    const triggerBrowserDownload = (blob, filename) => {
+    const triggerAnchorDownload = (href, filename, cleanup) => {
         const link = document.createElement('a');
-        const blobUrl = URL.createObjectURL(blob);
         link.download = filename;
-        link.href = blobUrl;
+        link.href = href;
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        document.body.removeChild(link);
+        if (cleanup) setTimeout(cleanup, 1000);
+    };
+
+    const triggerBrowserDownload = (blob, filename) => {
+        const blobUrl = URL.createObjectURL(blob);
+        triggerAnchorDownload(blobUrl, filename, () => URL.revokeObjectURL(blobUrl));
+    };
+
+    const isIOSLike = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    const dataUrlToBlob = (dataUrl) => {
+        const [metadata, base64Data] = dataUrl.split(',');
+        const mimeType = metadata.match(/data:(.*?);base64/)?.[1] || 'application/octet-stream';
+        const binary = atob(base64Data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return new Blob([bytes], { type: mimeType });
+    };
+
+    const triggerMobileDownload = (dataUrl, filename) => {
+        if (isIOSLike()) {
+            const opened = window.open(dataUrl, '_blank');
+            if (opened) opened.opener = null;
+            if (!opened) window.location.href = dataUrl;
+            return;
+        }
+        triggerBrowserDownload(dataUrlToBlob(dataUrl), filename);
     };
 
     const saveImageFile = async (format) => {
@@ -256,6 +338,12 @@ const init = () => {
         });
 
         try {
+            if (isTouchLike()) {
+                const dataUrl = exportCanvas.toDataURL(mimeType, format === 'png' ? undefined : 0.95);
+                triggerMobileDownload(dataUrl, `${defaultName}${extension}`);
+                return;
+            }
+
             if (canUseSavePicker) {
                 const fileHandle = await window.showSaveFilePicker({
                     suggestedName: `${defaultName}${extension}`,
@@ -425,24 +513,15 @@ const init = () => {
             item.type = 'button';
             item.className = 'dropdown-item';
             item.textContent = label;
-            const handleSave = async (event) => {
-                event?.preventDefault?.();
-                event?.stopPropagation?.();
+            addPressHandler(item, async () => {
                 closeAllDropdowns();
                 await saveImageFile(value);
-            };
-            item.addEventListener('click', handleSave);
-            item.addEventListener('touchend', handleSave, { passive: false });
+            });
             ui.saveMenu.appendChild(item);
         });
     };
 
     registerDropdown(ui.saveBtn, ui.saveMenu, renderSaveMenu);
-    ui.saveBtn?.addEventListener('touchend', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleDropdown(ui.saveMenu, renderSaveMenu);
-    }, { passive: false });
 
     ui.colorSelectBtn?.addEventListener('click', () => {
         ui.colorModal?.classList.remove('hidden');
