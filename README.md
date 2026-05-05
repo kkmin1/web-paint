@@ -23,7 +23,7 @@
 - Undo / Redo
 - 줌과 캔버스 크기 조절
 
-## 실행 방법
+## 로컬 실행방법
 
 ```bash
 npm install
