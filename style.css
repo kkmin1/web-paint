@@ -795,6 +795,7 @@ body {
   .toolbar-row.actions-row {
     display: flex;
     flex-wrap: nowrap;
+    overflow-y: visible;
   }
 
   .settings-row .control-dropdown,
@@ -937,6 +938,8 @@ body {
 
   .save-dropdown {
     min-width: 96px;
+    position: relative;
+    z-index: 6000;
   }
 
   .dropdown-item {
