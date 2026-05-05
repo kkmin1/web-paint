@@ -162,16 +162,21 @@ const init = () => {
         dropdownStates.forEach(({ menu }) => menu.classList.add('hidden'));
     };
 
+    const toggleDropdown = (menuEl, onOpen) => {
+        if (!menuEl) return;
+        const willOpen = menuEl.classList.contains('hidden');
+        closeAllDropdowns();
+        if (willOpen) {
+            onOpen?.();
+            menuEl.classList.remove('hidden');
+        }
+    };
+
     const registerDropdown = (triggerEl, menuEl, onOpen) => {
         if (!triggerEl || !menuEl) return;
         triggerEl.addEventListener('click', (event) => {
             event.stopPropagation();
-            const willOpen = menuEl.classList.contains('hidden');
-            closeAllDropdowns();
-            if (willOpen) {
-                onOpen?.();
-                menuEl.classList.remove('hidden');
-            }
+            toggleDropdown(menuEl, onOpen);
         });
         dropdownStates.push({ menu: menuEl, trigger: triggerEl });
     };
@@ -412,7 +417,7 @@ const init = () => {
     setupSelectDropdown(ui.fontFamily, ui.fontFamilyBtn, ui.fontFamilyMenu, '폰트');
     setupSelectDropdown(ui.fontSize, ui.fontSizeBtn, ui.fontSizeMenu, '폰트크기');
 
-    registerDropdown(ui.saveBtn, ui.saveMenu, () => {
+    const renderSaveMenu = () => {
         if (!ui.saveMenu) return;
         ui.saveMenu.innerHTML = '';
         [['PNG 저장', 'png'], ['JPG 저장', 'jpg']].forEach(([label, value]) => {
@@ -420,13 +425,24 @@ const init = () => {
             item.type = 'button';
             item.className = 'dropdown-item';
             item.textContent = label;
-            item.addEventListener('click', async () => {
+            const handleSave = async (event) => {
+                event?.preventDefault?.();
+                event?.stopPropagation?.();
                 closeAllDropdowns();
                 await saveImageFile(value);
-            });
+            };
+            item.addEventListener('click', handleSave);
+            item.addEventListener('touchend', handleSave, { passive: false });
             ui.saveMenu.appendChild(item);
         });
-    });
+    };
+
+    registerDropdown(ui.saveBtn, ui.saveMenu, renderSaveMenu);
+    ui.saveBtn?.addEventListener('touchend', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleDropdown(ui.saveMenu, renderSaveMenu);
+    }, { passive: false });
 
     ui.colorSelectBtn?.addEventListener('click', () => {
         ui.colorModal?.classList.remove('hidden');
