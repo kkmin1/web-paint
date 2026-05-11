@@ -11,6 +11,7 @@ const init = () => {
     const ui = {
         colorPicker: document.getElementById('colorPicker'),
         sizeInput: document.getElementById('sizeInput'),
+        opacityInput: document.getElementById('opacityInput'),
         undoBtn: document.getElementById('undoBtn'),
         redoBtn: document.getElementById('redoBtn'),
         clearBtn: document.getElementById('clearBtn'),
@@ -29,6 +30,8 @@ const init = () => {
         colorPresets: document.getElementById('colorPresets'),
         sizeBtn: document.getElementById('sizeBtn'),
         sizeMenu: document.getElementById('sizeMenu'),
+        opacityBtn: document.getElementById('opacityBtn'),
+        opacityMenu: document.getElementById('opacityMenu'),
         fontFamilyBtn: document.getElementById('fontFamilyBtn'),
         fontFamilyMenu: document.getElementById('fontFamilyMenu'),
         fontSizeBtn: document.getElementById('fontSizeBtn'),
@@ -47,6 +50,7 @@ const init = () => {
         panY: 0,
         isPanning: false,
         pinchActive: false,
+        touchGestureActive: false,
         startPanX: 0,
         startPanY: 0,
         startClientX: 0,
@@ -157,6 +161,14 @@ const init = () => {
         x: (touches[0].clientX + touches[1].clientX) / 2,
         y: (touches[0].clientY + touches[1].clientY) / 2
     });
+
+    const cancelDrawingForTouchGesture = () => {
+        if (isDrawing && appState.snapshot && !['brush', 'pencil', 'eraser'].includes(appState.tool)) {
+            ctx.putImageData(appState.snapshot, 0, 0);
+        }
+        isDrawing = false;
+        appState.isMovingSelection = false;
+    };
 
     const closeAllDropdowns = () => {
         dropdownStates.forEach(({ menu }) => menu.classList.add('hidden'));
@@ -502,6 +514,7 @@ const init = () => {
     });
 
     setupSelectDropdown(ui.sizeInput, ui.sizeBtn, ui.sizeMenu, '선굵기');
+    setupSelectDropdown(ui.opacityInput, ui.opacityBtn, ui.opacityMenu, '투명도');
     setupSelectDropdown(ui.fontFamily, ui.fontFamilyBtn, ui.fontFamilyMenu, '폰트');
     setupSelectDropdown(ui.fontSize, ui.fontSizeBtn, ui.fontSizeMenu, '폰트크기');
 
@@ -536,6 +549,7 @@ const init = () => {
         if (normalized) applyColor(normalized);
     });
     ui.sizeInput?.addEventListener('change', (event) => appState.setSize(event.target.value));
+    ui.opacityInput?.addEventListener('change', (event) => appState.setOpacity(event.target.value));
     ui.fontFamily?.addEventListener('change', (event) => appState.setFont(event.target.value));
     ui.fontSize?.addEventListener('change', (event) => {
         appState.fontSize = parseInt(event.target.value, 10) || 16;
@@ -598,8 +612,10 @@ const init = () => {
         if (!viewport.imageLoaded || event.touches.length !== 2) return;
         const center = getTouchCenter(event.touches);
         const anchor = getCanvasCoordinatesFromClient(center.x, center.y);
+        viewport.touchGestureActive = true;
         viewport.pinchActive = true;
         viewport.isPanning = false;
+        cancelDrawingForTouchGesture();
         viewport.startPinchDistance = getTouchDistance(event.touches);
         viewport.startPinchZoom = appState.zoomLevel;
         viewport.pinchAnchorX = anchor.x;
@@ -624,6 +640,9 @@ const init = () => {
     ui.workspace?.addEventListener('touchend', (event) => {
         if (event.touches.length < 2) {
             viewport.pinchActive = false;
+            if (event.touches.length === 0) {
+                viewport.touchGestureActive = false;
+            }
             updatePanClasses();
         }
     });
@@ -686,7 +705,13 @@ const init = () => {
     const startDrawingHandler = (event) => {
         if (event.button === 2 || viewport.isPanning || viewport.pinchActive || isResizing) return;
         if (event.type === 'touchstart') {
-            if (event.touches.length > 1) return;
+            if (event.touches.length > 1) {
+                viewport.touchGestureActive = true;
+                cancelDrawingForTouchGesture();
+                event.preventDefault();
+                return;
+            }
+            if (viewport.touchGestureActive) return;
             event.preventDefault();
         }
 
@@ -772,7 +797,10 @@ const init = () => {
     const drawHandler = (event) => {
         if (viewport.isPanning || viewport.pinchActive || (!isDrawing && !appState.isMovingSelection)) return;
         if (event.type === 'touchmove') {
-            if (event.touches.length > 1) return;
+            if (event.touches.length > 1 || viewport.touchGestureActive) {
+                event.preventDefault();
+                return;
+            }
             event.preventDefault();
         }
         const { x, y } = getCoordinates(event);
@@ -800,6 +828,17 @@ const init = () => {
     };
 
     const stopDrawingHandler = (event) => {
+        if (event?.type === 'touchend' || event?.type === 'touchcancel') {
+            if (viewport.touchGestureActive) {
+                cancelDrawingForTouchGesture();
+                if (!event.touches || event.touches.length === 0) {
+                    viewport.touchGestureActive = false;
+                    viewport.pinchActive = false;
+                    updatePanClasses();
+                }
+                return;
+            }
+        }
         if (viewport.isPanning || viewport.pinchActive || (!isDrawing && !appState.isMovingSelection)) return;
         if (appState.isMovingSelection) {
             appState.isMovingSelection = false;
